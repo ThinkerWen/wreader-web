@@ -1,14 +1,7 @@
 <template>
   <div class="layout-demo">
     <a-layout style="min-height: 100vh;">
-      <a-layout-header class="header">
-        <div class="header-content">
-          <div class="logo">
-            <img src="https://www.hive-net.cn/Assets/SiteGlobal/Hive_color.png" class="logo-img" />
-            阅读平台
-          </div>
-        </div>
-      </a-layout-header>
+      <the-header />
       <a-layout>
         <a-layout-sider :width="280">
           <div class="sider-search">
@@ -50,6 +43,7 @@
                 :bordered="false" 
                 :class="{ 'book-card-selected': isManaging && selectedBooks[i] }"
                 hover
+                @click="!isManaging && goToDetail(i)"
               >
                 <div class="book-content">
                   <div class="book-cover">
@@ -101,32 +95,23 @@
   min-height: 100vh;
 }
 
-.header {
-  padding: 0 20px;
+.layout-demo :deep(.arco-layout-sider) {
   background: var(--color-bg-2);
+  border-right: 1px solid var(--color-border);
+}
+
+.layout-demo :deep(.arco-layout-footer) {
+  background: var(--color-bg-2);
+  color: var(--color-text-2);
+  text-align: center;
+  padding: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.sider-search {
+  padding: 16px;
+  text-align: center;
   border-bottom: 1px solid var(--color-border);
-}
-
-.header-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 100%;
-}
-
-.logo {
-  font-size: 26px;
-  font-weight: bold;
-  color: var(--color-text-1);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.logo-img {
-  width: 32px;
-  height: 32px;
-  object-fit: contain;
 }
 
 .content {
@@ -198,25 +183,6 @@
   color: var(--color-text-1);
 }
 
-.layout-demo :deep(.arco-layout-sider) {
-  background: var(--color-bg-2);
-  border-right: 1px solid var(--color-border);
-}
-
-.layout-demo :deep(.arco-layout-footer) {
-  background: var(--color-bg-2);
-  color: var(--color-text-2);
-  text-align: center;
-  padding: 16px;
-  border-top: 1px solid var(--color-border);
-}
-
-.sider-search {
-  padding: 16px;
-  text-align: center;
-  border-bottom: 1px solid var(--color-border);
-}
-
 .header-actions {
   display: flex;
   gap: 12px;
@@ -233,7 +199,10 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue';
+import { useRouter } from 'vue-router';
+import TheHeader from '@/components/TheHeader.vue';
 
+const router = useRouter();
 const isManaging = ref(false);
 const selectedBooks = reactive({});
 
@@ -245,5 +214,9 @@ const removeSelected = () => {
     selectedBooks[key] = false;
   });
   isManaging.value = false;
+};
+
+const goToDetail = (bookId: number) => {
+  router.push(`/book/${bookId}`);
 };
 </script>
