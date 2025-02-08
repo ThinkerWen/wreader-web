@@ -44,6 +44,14 @@
         <icon-book />
         <span>书架</span>
       </div>
+      <div class="menu-item" @click="prevChapter">
+        <icon-up />
+        <span>上一章</span>
+      </div>
+      <div class="menu-item" @click="nextChapter">
+        <icon-down />
+        <span>下一章</span>
+      </div>
       <div class="menu-item" @click="goBack">
         <icon-arrow-left />
         <span>返回</span>
@@ -52,21 +60,13 @@
 
     <!-- 主内容区 -->
     <div class="main-content">
-      <div class="chapter-content">
-        <h1>{{ currentChapterTitle }}</h1>
-        <div class="text-content">
-          {{ chapterContent }}
+      <div class="content-wrapper">
+        <div class="chapter-content">
+          <h1>{{ currentChapterTitle }}</h1>
+          <div class="text-content">
+            {{ chapterContent }}
+          </div>
         </div>
-      </div>
-    </div>
-
-    <!-- 右侧翻页按钮 -->
-    <div class="page-controls">
-      <div class="page-btn prev" @click="prevChapter">
-        <icon-up />
-      </div>
-      <div class="page-btn next" @click="nextChapter">
-        <icon-down />
       </div>
     </div>
 
@@ -129,16 +129,22 @@
 .main-content {
   flex: 1;
   margin-left: 60px; /* 为左侧菜单留出空间 */
-  margin-right: 60px; /* 为右侧按钮留出空间 */
+  margin-right: 60px;
   height: 100vh;
   overflow-y: auto;
   padding: 40px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.content-wrapper {
+  width: 800px;
 }
 
 .chapter-content {
-  max-width: 800px;
-  margin: 0 auto;
+  width: 100%;
   padding: 0 40px;
+  background: v-bind('containerStyle.background');
 }
 
 .chapter-content h1 {
@@ -149,6 +155,7 @@
 }
 
 .text-content {
+  width: 100%; /* 填充父容器宽度 */
   font-size: v-bind('contentStyle.fontSize + "px"');
   line-height: v-bind('contentStyle.lineHeight');
   color: v-bind('containerStyle.color');
@@ -156,37 +163,7 @@
   letter-spacing: 0.5px;
 }
 
-.page-controls {
-  position: fixed;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 60px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  align-items: center;
-}
-
-.page-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(244, 233, 213, 0.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #666;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.page-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: #333;
-}
-
-/* 自定义滚动条 */
+/* 修改滚动条样式，确保紧贴内容 */
 .main-content::-webkit-scrollbar {
   width: 8px;
 }
