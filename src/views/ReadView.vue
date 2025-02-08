@@ -30,43 +30,53 @@
       </a-scrollbar>
     </a-drawer>
 
-    <!-- 顶部控制栏 - 默认隐藏，鼠标移动时显示 -->
-    <div class="control-bar" :class="{ 'show': showControls }">
-      <div class="left-controls">
-        <a-button type="text" @click="showChapterList = true">
-          <template #icon>
-            <icon-menu />
-          </template>
-          目录
-        </a-button>
-        <a-button type="text" @click="goBack">
-          <template #icon>
-            <icon-arrow-left />
-          </template>
-          返回
-        </a-button>
+    <!-- 左侧固定按钮 -->
+    <div class="side-menu">
+      <div class="menu-item" @click="showChapterList = true">
+        <icon-menu />
+        <span>目录</span>
       </div>
-      <div class="right-controls">
-        <a-button-group>
-          <a-button type="text" @click="prevChapter">上一章</a-button>
-          <a-button type="text" @click="nextChapter">下一章</a-button>
-        </a-button-group>
+      <div class="menu-item" @click="showSettings = true">
+        <icon-settings />
+        <span>设置</span>
+      </div>
+      <div class="menu-item">
+        <icon-book />
+        <span>书架</span>
+      </div>
+      <div class="menu-item" @click="goBack">
+        <icon-arrow-left />
+        <span>返回</span>
       </div>
     </div>
 
-    <!-- 修改内容区域的结构 -->
-    <div class="content-wrapper" @mousemove="handleMouseMove">
-      <div class="content-scroll">
-        <div class="content-container">
-          <div class="chapter-content">
-            <h1>{{ currentChapterTitle }}</h1>
-            <div class="text-content">
-              {{ chapterContent }}
-            </div>
-          </div>
+    <!-- 主内容区 -->
+    <div class="main-content">
+      <div class="chapter-content">
+        <h1>{{ currentChapterTitle }}</h1>
+        <div class="text-content">
+          {{ chapterContent }}
         </div>
       </div>
     </div>
+
+    <!-- 右侧翻页按钮 -->
+    <div class="page-controls">
+      <div class="page-btn prev" @click="prevChapter">
+        <icon-up />
+      </div>
+      <div class="page-btn next" @click="nextChapter">
+        <icon-down />
+      </div>
+    </div>
+
+    <!-- 添加设置抽屉 -->
+    <read-settings
+      v-model:visible="showSettings"
+      @change-theme="handleThemeChange"
+      @change-font-size="handleFontSizeChange"
+      @change-line-spacing="handleLineSpacingChange"
+    />
   </div>
 </template>
 
@@ -74,121 +84,139 @@
 .read-container {
   width: 100vw;
   height: 100vh;
-  background: var(--color-bg-1);
+  background: v-bind('containerStyle.background');
+  display: flex;
   position: relative;
+}
+
+.side-menu {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 60px;
+  height: 100vh;
+  background: v-bind('containerStyle.background');
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* 防止整体滚动 */
-}
-
-.control-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 48px;
-  background: var(--color-bg-2);
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0 20px;
-  transform: translateY(-100%);
-  transition: transform 0.3s ease;
-  z-index: 100;
-  border-bottom: 1px solid var(--color-border);
+  padding-top: 20px;
+  gap: 20px;
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.control-bar.show {
-  transform: translateY(0);
-}
-
-.left-controls,
-.right-controls {
+.menu-item {
+  width: 100%;
+  height: 60px;
   display: flex;
-  gap: 12px;
+  flex-direction: column;
   align-items: center;
-}
-
-/* 修改内容区域的样式 */
-.content-wrapper {
-  flex: 1;
-  display: flex;
   justify-content: center;
-  align-items: flex-start;
-  padding: 20px;
-  overflow: hidden;
+  cursor: pointer;
+  color: #666;
+  font-size: 12px;
+  gap: 4px;
 }
 
-.content-scroll {
-  width: 800px; /* 固定宽度 */
-  height: 100%;
-  overflow-y: auto; /* 只在这里启用滚动 */
-  background: var(--color-bg-2);
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.menu-item:hover {
+  color: #333;
+  background: rgba(0, 0, 0, 0.05);
 }
 
-.content-container {
-  padding: 40px 20px;
+.menu-item :deep(svg) {
+  font-size: 24px;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 60px; /* 为左侧菜单留出空间 */
+  margin-right: 60px; /* 为右侧按钮留出空间 */
+  height: 100vh;
+  overflow-y: auto;
+  padding: 40px 0;
 }
 
 .chapter-content {
-  /* 移除 max-width，因为父容器已经固定宽度 */
-  background: transparent; /* 移除背景，因为已经在父容器设置 */
-  box-shadow: none; /* 移除阴影，因为已经在父容器设置 */
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 40px;
 }
 
 .chapter-content h1 {
   text-align: center;
   margin-bottom: 30px;
-  color: var(--color-text-1);
+  color: #333;
   font-size: 24px;
 }
 
 .text-content {
-  font-size: 18px;
-  line-height: 1.8;
-  color: var(--color-text-1);
+  font-size: v-bind('contentStyle.fontSize + "px"');
+  line-height: v-bind('contentStyle.lineHeight');
+  color: v-bind('containerStyle.color');
   text-align: justify;
   letter-spacing: 0.5px;
-  white-space: pre-wrap;
 }
 
-/* 将滚动条样式应用到正确的元素 */
-.content-scroll::-webkit-scrollbar {
+.page-controls {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+}
+
+.page-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(244, 233, 213, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #666;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.page-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #333;
+}
+
+/* 自定义滚动条 */
+.main-content::-webkit-scrollbar {
   width: 8px;
 }
 
-.content-scroll::-webkit-scrollbar-track {
+.main-content::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.content-scroll::-webkit-scrollbar-thumb {
-  background: transparent;
+.main-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 4px;
 }
 
-.content-scroll:hover::-webkit-scrollbar-thumb {
-  background: var(--color-fill-4);
-}
-
-/* 抽屉样式覆盖 */
-:deep(.arco-drawer-header) {
-  border-bottom: 1px solid var(--color-border);
-}
-
-.drawer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
+.main-content:hover::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
 }
 </style>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, reactive } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { IconMenu, IconArrowLeft } from '@arco-design/web-vue/es/icon';
+import { 
+  IconMenu, 
+  IconArrowLeft, 
+  IconSettings, 
+  IconBook,
+  IconUp,
+  IconDown
+} from '@arco-design/web-vue/es/icon';
+import ReadSettings from '@/components/ReadSettings.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -196,16 +224,6 @@ const showChapterList = ref(false);
 const showControls = ref(false);
 const isReverse = ref(false);
 const currentChapter = ref(Number(route.params.id) || 1);
-
-// 控制栏自动隐藏
-let hideTimeout: number;
-const handleMouseMove = () => {
-  showControls.value = true;
-  clearTimeout(hideTimeout);
-  hideTimeout = window.setTimeout(() => {
-    showControls.value = false;
-  }, 3000);
-};
 
 // 模拟章节数据
 const chapters = Array.from({ length: 1986 }, (_, i) => ({
@@ -219,6 +237,19 @@ const displayChapters = ref([...chapters]);
 // 模拟当前章节内容
 const currentChapterTitle = ref(chapters[currentChapter.value - 1].title);
 const chapterContent = ref('这是一个测试章节的内容...\n'.repeat(50));
+
+const showSettings = ref(false);
+
+// 阅读设置相关的状态
+const containerStyle = reactive({
+  background: 'var(--color-bg-2)',
+  color: 'var(--color-text-1)'
+});
+
+const contentStyle = reactive({
+  fontSize: 18,
+  lineHeight: 1.8
+});
 
 const reverseChapterList = () => {
   isReverse.value = !isReverse.value;
@@ -253,11 +284,17 @@ const nextChapter = () => {
   }
 };
 
-onMounted(() => {
-  handleMouseMove();
-});
+// 处理设置变更
+const handleThemeChange = (theme: any) => {
+  containerStyle.background = theme.background;
+  containerStyle.color = theme.color;
+};
 
-onUnmounted(() => {
-  clearTimeout(hideTimeout);
-});
+const handleFontSizeChange = (size: number) => {
+  contentStyle.fontSize = size;
+};
+
+const handleLineSpacingChange = (spacing: number) => {
+  contentStyle.lineHeight = spacing;
+};
 </script> 
