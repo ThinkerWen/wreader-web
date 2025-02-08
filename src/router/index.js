@@ -1,21 +1,26 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import Home from '../views/HomeView.vue'; // 引入 Home 组件
-import BookDetail from '../views/BookDetail.vue'; // 引入 Home 组件
+import Home from '../views/HomeView.vue';
+import BookDetail from '../views/BookDetail.vue';
+import ReadView from '../views/ReadView.vue';
 
 const routes = [
   {
-    path: '/',       // 根路径
+    path: '/',
     name: 'Home',
-    component: Home, // 对应的组件
+    component: Home,
   },{
     path: '/book/:id',
     name: 'BookDetail',
     component: BookDetail
+  },{
+    path: '/read/:id',
+    name: 'Read',
+    component: ReadView
   }
 ];
 
 const router = createRouter({
-  history: createWebHistory(),  // 使用 HTML5 History 模式
+  history: createWebHistory(),
   routes,
 });
 
