@@ -22,16 +22,21 @@ a,
   }
 }
 
-/* 删除或注释掉这个媒体查询，因为它会导致不必要的网格布局 */
-/* @media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
 
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
-} */
+::-webkit-scrollbar-track {
+  background: var(--color-bg-2); /* 背景颜色 */
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary-light-1); /* 滑块颜色 */
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-light-4);
+}

@@ -1,6 +1,6 @@
 <template>
   <div class="layout-demo">
-    <a-layout style="min-height: 100vh;">
+    <a-layout>
       <the-header />
       <a-layout>
         <a-layout-sider :width="280">
@@ -86,13 +86,13 @@
 
 <style scoped>
 .layout-demo {
-  width: 100%;
-  min-height: 100vh;
-  background: var(--color-fill-2);
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
 }
 
 .layout-demo :deep(.arco-layout) {
-  min-height: 100vh;
+  height: 100%;
 }
 
 .layout-demo :deep(.arco-layout-sider) {
@@ -117,6 +117,8 @@
 .content {
   padding: 20px;
   background: var(--color-bg-2);
+  overflow-y: auto;
+  height: 100%;
 }
 
 .content-header {
@@ -194,6 +196,19 @@
   right: 0;
   top: 0;
   padding: 8px;
+}
+
+.content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.content::-webkit-scrollbar-track {
+  background: var(--color-fill-2);
+}
+
+.content::-webkit-scrollbar-thumb {
+  background: var(--color-fill-4);
+  border-radius: 4px;
 }
 </style>
 

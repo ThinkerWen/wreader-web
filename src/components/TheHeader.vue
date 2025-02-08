@@ -1,7 +1,7 @@
 <template>
   <a-layout-header class="header">
     <div class="header-content">
-      <div class="logo">
+      <div class="logo" @click="goHome" role="button">
         <img src="https://www.hive-net.cn/Assets/SiteGlobal/Hive_color.png" class="logo-img" alt="icon"/>
         <span class="logo-text">悦读</span>
       </div>
@@ -39,6 +39,13 @@
   display: flex;
   align-items: center;
   gap: 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s;
+}
+
+.logo:hover {
+  opacity: 0.8;
 }
 
 .logo-img {
@@ -68,9 +75,15 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { IconMoonFill, IconSunFill } from '@arco-design/web-vue/es/icon';
 
+const router = useRouter();
 const isDark = ref(false);
+
+const goHome = () => {
+  router.push('/');
+};
 
 const toggleTheme = () => {
   isDark.value = !isDark.value;

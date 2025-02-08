@@ -1,6 +1,6 @@
 <template>
   <div class="layout-demo">
-    <a-layout style="min-height: 100vh;">
+    <a-layout>
       <the-header />
       <a-layout>
         <a-layout-sider :width="280">
@@ -85,7 +85,7 @@
 /* 复用 HomeView 的 header 相关样式 */
 
 .chapter-list {
-  height: calc(100vh - 64px);
+  height: 100%;
   display: flex;
   flex-direction: column;
   background: var(--color-bg-2);
@@ -172,8 +172,16 @@
 }
 
 :deep(.arco-scrollbar) {
-  height: calc(100vh - 120px);
+  height: calc(100% - 56px);
   background: var(--color-bg-2);
+}
+
+:deep(.arco-scrollbar-track) {
+  background-color: var(--color-fill-2) !important;
+}
+
+:deep(.arco-scrollbar-thumb) {
+  background-color: var(--color-fill-4) !important;
 }
 
 :deep(.arco-menu) {
@@ -189,9 +197,13 @@
 }
 
 .layout-demo {
-  width: 100%;
-  min-height: 100vh;
-  background: var(--color-fill-2);
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
+
+.layout-demo :deep(.arco-layout) {
+  height: 100%;
 }
 
 .content {
@@ -215,7 +227,9 @@ const chapters = Array.from({ length: 1986 }, (_, i) => ({
   title: `第${i + 1}章 ${i + 1 === 1986 ? '大结局' : '章节名称'}`
 }));
 
-const displayChapters = ref(chapters);
+// 保存原始章节顺序
+const originalChapters = [...chapters];
+const displayChapters = ref([...chapters]);
 
 const toggleShelf = () => {
   isInShelf.value = !isInShelf.value;
@@ -234,6 +248,12 @@ const handleChapterClick = (key: string) => {
 
 const reverseChapterList = () => {
   isReverse.value = !isReverse.value;
-  displayChapters.value = [...chapters].reverse();
+  if (isReverse.value) {
+    // 倒序
+    displayChapters.value = [...chapters].reverse();
+  } else {
+    // 正序 - 恢复原始顺序
+    displayChapters.value = [...originalChapters];
+  }
 };
 </script> 
