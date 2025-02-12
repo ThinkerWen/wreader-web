@@ -18,13 +18,14 @@
         </div>
       </template>
       <a-scrollbar>
-        <a-menu :style="{ width: '100%' }" @click="handleChapterClick">
+        <a-menu :style="{ width: '100%' }">
           <a-menu-item 
-            v-for="chapter in displayChapters" 
-            :key="chapter.id"
-            :class="{ 'reading': chapter.id === currentChapter }"
+            v-for="(chapter, index) in displayChapters" 
+            :key="index"
+            :class="{ 'reading': chapter === currentChapter }"
+            @click="handleChapterClick(chapter)"
           >
-            {{ chapter.title }}
+            {{ chapter.name }}
           </a-menu-item>
         </a-menu>
       </a-scrollbar>
@@ -62,10 +63,8 @@
     <div class="main-content">
       <div class="content-wrapper">
         <div class="chapter-content">
-          <h1>{{ currentChapterTitle }}</h1>
-          <div class="text-content">
-            {{ chapterContent }}
-          </div>
+          <h1>{{ currentChapter?.name || '加载中...' }}</h1>
+          <div class="text-content" v-html="formattedContent"></div>
         </div>
       </div>
     </div>
@@ -155,12 +154,19 @@
 }
 
 .text-content {
-  width: 100%; /* 填充父容器宽度 */
+  width: 100%;
   font-size: v-bind('contentStyle.fontSize + "px"');
   line-height: v-bind('contentStyle.lineHeight');
   color: v-bind('containerStyle.color');
   text-align: justify;
   letter-spacing: 0.5px;
+  white-space: pre-line; /* 保留换行符 */
+}
+
+.text-content :deep(br) {
+  display: block;
+  margin: 0.5em 0;
+  content: "";
 }
 
 /* 修改滚动条样式，确保紧贴内容 */
@@ -183,8 +189,10 @@
 </style>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { getChapterContent } from '@/api/novel';
+import { Message } from '@arco-design/web-vue';
 import { 
   IconMenu, 
   IconArrowLeft, 
@@ -195,25 +203,35 @@ import {
 } from '@arco-design/web-vue/es/icon';
 import ReadSettings from '@/components/ReadSettings.vue';
 
+interface Chapter {
+  name: string;
+  url: string;
+}
+
+interface NovelDetail {
+  name: string;
+  url: string;
+  source_id: string;
+  size: string;
+  author: string;
+  status: string;
+  cover_url: string;
+  classify: string;
+  introduce: string | null;
+  last_update_time: string;
+  last_chapter_name: string;
+}
+
 const router = useRouter();
 const route = useRoute();
 const showChapterList = ref(false);
 const showControls = ref(false);
 const isReverse = ref(false);
-const currentChapter = ref(Number(route.params.id) || 1);
-
-// 模拟章节数据
-const chapters = Array.from({ length: 1986 }, (_, i) => ({
-  id: i + 1,
-  title: `第${i + 1}章 ${i + 1 === 1986 ? '大结局' : '章节名称'}`
-}));
-
-const originalChapters = [...chapters];
-const displayChapters = ref([...chapters]);
-
-// 模拟当前章节内容
-const currentChapterTitle = ref(chapters[currentChapter.value - 1].title);
-const chapterContent = ref('这是一个测试章节的内容...\n'.repeat(50));
+const currentChapter = ref<Chapter | null>(null);
+const novelInfo = ref<NovelDetail | null>(null);
+const displayChapters = ref<Chapter[]>([]);
+const originalChapters = ref<Chapter[]>([]);
+const chapterContent = ref('');
 
 const showSettings = ref(false);
 
@@ -228,37 +246,66 @@ const contentStyle = reactive({
   lineHeight: 1.8
 });
 
-const reverseChapterList = () => {
-  isReverse.value = !isReverse.value;
-  if (isReverse.value) {
-    displayChapters.value = [...chapters].reverse();
-  } else {
-    displayChapters.value = [...originalChapters];
+const formattedContent = computed(() => {
+  return chapterContent.value
+    .replace(/\r\n/g, '<br>')
+    .replace(/\n/g, '<br>')
+    .replace(/\s\s/g, '&nbsp;&nbsp;');
+});
+
+// 加载章节内容
+const loadChapterContent = async (novel: NovelDetail, chapter: Chapter) => {
+  try {
+    const { data } = await getChapterContent(novel, chapter);
+    chapterContent.value = data.content;
+    currentChapter.value = chapter;
+  } catch (error) {
+    console.error('获取章节内容失败：', error);
+    Message.error('获取章节内容失败，请稍后重试');
   }
 };
 
-const handleChapterClick = (key: string) => {
-  currentChapter.value = Number(key);
-  showChapterList.value = false;
-  // TODO: 加载新章节内容
+// 处理章节点击
+const handleChapterClick = async (chapter: Chapter) => {
+  if (novelInfo.value) {
+    showChapterList.value = false;
+    await loadChapterContent(novelInfo.value, chapter);
+  }
+};
+
+// 上一章
+const prevChapter = async () => {
+  if (currentChapter.value && novelInfo.value) {
+    const currentIndex = displayChapters.value.findIndex(c => c.url === currentChapter.value?.url);
+    if (currentIndex > 0) {
+      const prevChapter = displayChapters.value[currentIndex - 1];
+      await loadChapterContent(novelInfo.value, prevChapter);
+    }
+  }
+};
+
+// 下一章
+const nextChapter = async () => {
+  if (currentChapter.value && novelInfo.value) {
+    const currentIndex = displayChapters.value.findIndex(c => c.url === currentChapter.value?.url);
+    if (currentIndex < displayChapters.value.length - 1) {
+      const nextChapter = displayChapters.value[currentIndex + 1];
+      await loadChapterContent(novelInfo.value, nextChapter);
+    }
+  }
+};
+
+const reverseChapterList = () => {
+  isReverse.value = !isReverse.value;
+  if (isReverse.value) {
+    displayChapters.value = [...originalChapters.value].reverse();
+  } else {
+    displayChapters.value = [...originalChapters.value];
+  }
 };
 
 const goBack = () => {
   router.back();
-};
-
-const prevChapter = () => {
-  if (currentChapter.value > 1) {
-    currentChapter.value--;
-    // TODO: 加载新章节内容
-  }
-};
-
-const nextChapter = () => {
-  if (currentChapter.value < chapters.length) {
-    currentChapter.value++;
-    // TODO: 加载新章节内容
-  }
 };
 
 // 处理设置变更
@@ -274,4 +321,29 @@ const handleFontSizeChange = (size: number) => {
 const handleLineSpacingChange = (spacing: number) => {
   contentStyle.lineHeight = spacing;
 };
+
+onMounted(async () => {
+  const { query } = route;
+  if (query.novel && query.chapter) {
+    try {
+      const novel = JSON.parse(query.novel as string);
+      const chapter = JSON.parse(query.chapter as string);
+      novelInfo.value = novel;
+      
+      // 从 localStorage 获取章节列表
+      const chaptersData = localStorage.getItem(`chapters_${novel.source_id}`);
+      if (chaptersData) {
+        const chapters = JSON.parse(chaptersData);
+        originalChapters.value = chapters;
+        displayChapters.value = [...chapters];
+      }
+      
+      // 加载章节内容
+      await loadChapterContent(novel, chapter);
+    } catch (error) {
+      console.error('初始化失败：', error);
+      Message.error('加载失败，请稍后重试');
+    }
+  }
+});
 </script> 

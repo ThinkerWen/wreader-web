@@ -12,11 +12,12 @@
               </a-button>
             </div>
             <a-scrollbar>
-              <a-menu :style="{ width: '100%' }" @click="handleChapterClick">
+              <a-menu :style="{ width: '100%' }">
                 <a-menu-item 
                   v-for="(chapter, index) in displayChapters" 
                   :key="index"
                   :class="{ 'reading': index === currentChapter }"
+                  @click="handleMenuClick(index)"
                 >
                   {{ chapter.name }}
                 </a-menu-item>
@@ -299,24 +300,30 @@ const toggleShelf = () => {
 };
 
 const startReading = () => {
-  if (displayChapters.value.length > 0) {
+  if (displayChapters.value.length > 0 && bookDetail.value) {
+    // 获取第一章
+    const firstChapter = displayChapters.value[0];
     router.push({
       path: `/read/${currentChapter.value}`,
       query: {
-        url: displayChapters.value[0].url
+        url: firstChapter.url,
+        chapter: JSON.stringify(firstChapter),
+        novel: JSON.stringify(bookDetail.value)
       }
     });
   }
 };
 
-const handleChapterClick = (key: string) => {
-  const chapter = displayChapters.value[Number(key)];
-  if (chapter) {
-    currentChapter.value = Number(key);
+const handleMenuClick = (index: number) => {
+  const chapter = displayChapters.value[index];
+  if (chapter && bookDetail.value) {
+    currentChapter.value = index;
     router.push({
       path: `/read/${currentChapter.value}`,
       query: {
-        url: chapter.url
+        url: chapter.url,
+        chapter: JSON.stringify(chapter),
+        novel: JSON.stringify(bookDetail.value)
       }
     });
   }

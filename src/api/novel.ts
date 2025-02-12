@@ -39,4 +39,16 @@ export const getNovelChapters = (novel: NovelDetail): Promise<ChapterResponse> =
   return api.post('/novel/chapter', {
     novel
   });
+};
+
+interface ChapterContent {
+  content: string;
+  next_page: string;
+}
+
+export const getChapterContent = (novel: NovelDetail, chapter: Chapter): Promise<ChapterContent> => {
+  return api.post('/novel/content', {
+    novel,
+    chapter
+  });
 }; 
