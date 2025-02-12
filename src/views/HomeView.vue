@@ -9,6 +9,8 @@
               :style="{ width: '90%' }"
               placeholder="搜索书籍..."
               search-button
+              :loading="isSearching"
+              @search="handleSearch"
             />
           </div>
           <a-menu
@@ -23,58 +25,32 @@
         </a-layout-sider>
         <a-layout-content class="content">
           <div class="content-header">
-            <h2>我的书架</h2>
+            <h2>{{ isSearchMode ? '搜索结果' : '我的书架' }}</h2>
             <div class="header-actions">
-              <a-button v-if="isManaging"
-                        type="primary" 
-                        status="danger" 
-                        @click="removeSelected">
-                移除选中书籍
+              <a-button v-if="isSearchMode" @click="backToBookshelf">
+                返回书架
               </a-button>
-              <a-button @click="isManaging = !isManaging">
-                {{ isManaging ? '完成' : '管理书架' }}
-              </a-button>
+              <template v-else>
+                <a-button v-if="isManaging"
+                          type="primary" 
+                          status="danger" 
+                          @click="removeSelected">
+                  移除选中书籍
+                </a-button>
+                <a-button @click="isManaging = !isManaging">
+                  {{ isManaging ? '完成' : '管理书架' }}
+                </a-button>
+              </template>
             </div>
           </div>
-          <a-row :gutter="[16, 16]" class="book-grid">
-            <a-col :span="8" v-for="i in 6" :key="i">
-              <a-card 
-                class="book-card" 
-                :bordered="false" 
-                :class="{ 'book-card-selected': isManaging && selectedBooks[i] }"
-                hover
-                @click="!isManaging && goToDetail(i)"
-              >
-                <div class="book-content">
-                  <div class="book-cover">
-                    <a-image
-                      width="140"
-                      src="https://www.bqgl.cc/bookimg/113/113680.jpg"
-                      :preview="false"
-                    />
-                  </div>
-                  <div class="book-info">
-                    <h4 class="book-title">诡秘之主</h4>
-                    <div class="info-item">
-                      <span class="label">作者：</span>
-                      <span class="value">爱潜水的乌贼</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="label">已读：</span>
-                      <span class="value">第23章 初入歧路</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="label">最新：</span>
-                      <span class="value">第1986章 大结局</span>
-                    </div>
-                  </div>
-                  <div v-if="isManaging" class="checkbox-wrapper">
-                    <a-checkbox v-model="selectedBooks[i]" />
-                  </div>
-                </div>
-              </a-card>
-            </a-col>
-          </a-row>
+          
+          <book-list
+            :books="currentBooks"
+            :show-manage="!isSearchMode && isManaging"
+            :empty-text="isSearchMode ? '暂无搜索结果' : '书架空空如也'"
+            @select-books="handleSelectBooks"
+            @book-click="handleBookClick"
+          />
         </a-layout-content>
       </a-layout>
       <a-layout-footer>
@@ -213,25 +189,109 @@
 </style>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import TheHeader from '@/components/TheHeader.vue';
+import BookList from '@/components/BookList.vue';
+import { Message } from '@arco-design/web-vue';
+import { searchNovels } from '@/api/novel';
 
 const router = useRouter();
 const isManaging = ref(false);
-const selectedBooks = reactive({});
+const isSearching = ref(false);
+const isSearchMode = ref(false);
+const searchResults = ref([]);
+const selectedBooks = ref({});
 
-const removeSelected = () => {
-  // 这里添加移除选中书籍的逻辑
-  console.log('要移除的书籍：', selectedBooks);
-  // 重置选中状态
-  Object.keys(selectedBooks).forEach(key => {
-    selectedBooks[key] = false;
-  });
-  isManaging.value = false;
+interface Book {
+  source_id: string;
+  name: string;
+  author: string;
+  status: string;
+  cover_url: string;
+  last_chapter_name: string;
+  progress?: string;
+  url?: string;
+}
+
+// 修改模拟数据，添加更多书籍
+const bookshelfBooks = ref<Book[]>([
+  {
+    source_id: '1',
+    name: '诡秘之主',
+    author: '爱潜水的乌贼',
+    status: '已完结',
+    cover_url: 'https://www.bqgl.cc/bookimg/113/113680.jpg',
+    last_chapter_name: '第1986章 大结局',
+    progress: '第23章 初入歧路'
+  },
+  {
+    source_id: '2',
+    name: '我的治愈系游戏',
+    author: '我会修空调',
+    status: '连载中',
+    cover_url: 'https://www.bqgl.cc/bookimg/113/113680.jpg',
+    last_chapter_name: '第1024章',
+    progress: '第156章'
+  },
+  {
+    source_id: '3',
+    name: '大奉打更人',
+    author: '卖报小郎君',
+    status: '已完结',
+    cover_url: 'https://www.bqgl.cc/bookimg/113/113680.jpg',
+    last_chapter_name: '第1614章 终章',
+    progress: '第45章'
+  }
+]);
+
+const currentBooks = computed(() => {
+  return isSearchMode.value ? searchResults.value : bookshelfBooks.value;
+});
+
+const handleSearch = async (searchValue: string) => {
+  if (!searchValue.trim()) {
+    Message.warning('请输入搜索关键词');
+    return;
+  }
+  
+  isSearching.value = true;
+  try {
+    const { data } = await searchNovels(searchValue);
+    searchResults.value = data;
+    isSearchMode.value = true;
+  } catch (error) {
+    console.error('搜索失败：', error);
+    Message.error('搜索失败，请稍后重试');
+  } finally {
+    isSearching.value = false;
+  }
 };
 
-const goToDetail = (bookId: number) => {
-  router.push(`/book/${bookId}`);
+const backToBookshelf = () => {
+  isSearchMode.value = false;
+  searchResults.value = [];
+};
+
+const handleSelectBooks = (books: Record<string, boolean>) => {
+  selectedBooks.value = books;
+};
+
+const handleBookClick = (book: Book) => {
+  if (isSearchMode.value) {
+    // 处理搜索结果点击
+    console.log('点击搜索结果：', book);
+  } else {
+    // 处理书架书籍点击
+    router.push(`/book/${book.source_id}`);
+  }
+};
+
+const removeSelected = () => {
+  // 处理移除选中书籍的逻辑
+  console.log('要移除的书籍：', selectedBooks.value);
+  // 重置选中状态
+  selectedBooks.value = {};
+  isManaging.value = false;
 };
 </script>
