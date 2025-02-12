@@ -14,11 +14,11 @@
             <a-scrollbar>
               <a-menu :style="{ width: '100%' }" @click="handleChapterClick">
                 <a-menu-item 
-                  v-for="chapter in displayChapters" 
-                  :key="chapter.id"
-                  :class="{ 'reading': chapter.id === currentChapter }"
+                  v-for="(chapter, index) in displayChapters" 
+                  :key="index"
+                  :class="{ 'reading': index === currentChapter }"
                 >
-                  {{ chapter.title }}
+                  {{ chapter.name }}
                 </a-menu-item>
               </a-menu>
             </a-scrollbar>
@@ -35,26 +35,26 @@
                 />
               </div>
               <div class="book-info">
-                <h1 class="book-title">诡秘之主</h1>
+                <h1 class="book-title">{{ bookDetail?.name }}</h1>
                 <div class="info-row">
                   <span class="label">作者：</span>
-                  <span class="value">爱潜水的乌贼</span>
+                  <span class="value">{{ bookDetail?.author }}</span>
                 </div>
                 <div class="info-row">
                   <span class="label">分类：</span>
-                  <span class="value">玄幻奇幻</span>
+                  <span class="value">{{ bookDetail?.classify || '未知' }}</span>
                 </div>
                 <div class="info-row">
                   <span class="label">状态：</span>
-                  <span class="value">已完结</span>
+                  <span class="value">{{ bookDetail?.status }}</span>
                 </div>
                 <div class="info-row">
                   <span class="label">字数：</span>
-                  <span class="value">584万字</span>
+                  <span class="value">{{ bookDetail?.size || '未知' }}</span>
                 </div>
                 <div class="info-row">
                   <span class="label">最新：</span>
-                  <span class="value">第1986章 大结局</span>
+                  <span class="value">{{ bookDetail?.last_chapter_name }}</span>
                 </div>
                 <div class="action-buttons">
                   <a-button type="primary" size="large" @click="startReading">
@@ -212,24 +212,86 @@
 </style>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import TheHeader from '@/components/TheHeader.vue';
+import { getNovelChapters } from '@/api/novel';
+import { Message } from '@arco-design/web-vue';
 
 const router = useRouter();
+const route = useRoute();
 const isInShelf = ref(true);
 const isReverse = ref(false);
 const currentChapter = ref(1);
 
-// 模拟章节数据
-const chapters = Array.from({ length: 1986 }, (_, i) => ({
-  id: i + 1,
-  title: `第${i + 1}章 ${i + 1 === 1986 ? '大结局' : '章节名称'}`
-}));
+interface Chapter {
+  name: string;
+  url: string;
+}
 
-// 保存原始章节顺序
-const originalChapters = [...chapters];
-const displayChapters = ref([...chapters]);
+interface NovelDetail {
+  name: string;
+  url: string;
+  source_id: string;
+  size: string;
+  author: string;
+  status: string;
+  cover_url: string;
+  classify: string;
+  introduce: string | null;
+  last_update_time: string;
+  last_chapter_name: string;
+}
+
+const displayChapters = ref<Chapter[]>([]);
+const originalChapters = ref<Chapter[]>([]);
+const bookDetail = ref<NovelDetail | null>(null);
+
+onMounted(async () => {
+  const bookId = route.params.id as string;
+  
+  // 从 localStorage 获取章节列表和书籍信息
+  const chaptersData = localStorage.getItem(`chapters_${bookId}`);
+  const bookData = localStorage.getItem(`book_${bookId}`);
+  
+  if (chaptersData && bookData) {
+    const chapters = JSON.parse(chaptersData);
+    const book = JSON.parse(bookData);
+    originalChapters.value = chapters;
+    displayChapters.value = [...chapters];
+    bookDetail.value = book;
+  } else {
+    // 如果 localStorage 中没有数据，则重新请求
+    try {
+      // 这里应该从某处获取书籍详情，暂时使用模拟数据
+      const novelDetail: NovelDetail = {
+        name: '诡秘之主',
+        url: '',
+        source_id: bookId,
+        size: '',
+        author: '爱潜水的乌贼',
+        status: '已完结',
+        cover_url: 'https://www.bqgl.cc/bookimg/113/113680.jpg',
+        classify: '',
+        introduce: null,
+        last_update_time: '',
+        last_chapter_name: '第1986章 大结局'
+      };
+      
+      const { data } = await getNovelChapters(novelDetail);
+      originalChapters.value = data.chapter_list;
+      displayChapters.value = [...data.chapter_list];
+      bookDetail.value = novelDetail;
+      
+      // 存储到 localStorage
+      localStorage.setItem(`chapters_${bookId}`, JSON.stringify(data.chapter_list));
+      localStorage.setItem(`book_${bookId}`, JSON.stringify(novelDetail));
+    } catch (error) {
+      console.error('获取章节列表失败：', error);
+      Message.error('获取章节列表失败，请稍后重试');
+    }
+  }
+});
 
 const toggleShelf = () => {
   isInShelf.value = !isInShelf.value;
@@ -237,23 +299,35 @@ const toggleShelf = () => {
 };
 
 const startReading = () => {
-  // TODO: 跳转到阅读页面
-  router.push(`/read/${currentChapter.value}`);
+  if (displayChapters.value.length > 0) {
+    router.push({
+      path: `/read/${currentChapter.value}`,
+      query: {
+        url: displayChapters.value[0].url
+      }
+    });
+  }
 };
 
 const handleChapterClick = (key: string) => {
-  currentChapter.value = Number(key);
-  // TODO: 跳转到对应章节
+  const chapter = displayChapters.value[Number(key)];
+  if (chapter) {
+    currentChapter.value = Number(key);
+    router.push({
+      path: `/read/${currentChapter.value}`,
+      query: {
+        url: chapter.url
+      }
+    });
+  }
 };
 
 const reverseChapterList = () => {
   isReverse.value = !isReverse.value;
   if (isReverse.value) {
-    // 倒序
-    displayChapters.value = [...chapters].reverse();
+    displayChapters.value = [...originalChapters.value].reverse();
   } else {
-    // 正序 - 恢复原始顺序
-    displayChapters.value = [...originalChapters];
+    displayChapters.value = [...originalChapters.value];
   }
 };
 </script> 

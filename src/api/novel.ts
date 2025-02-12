@@ -9,4 +9,34 @@ export const searchNovels = (keyword: string) => {
   return api.get('/novel/search', {
     params: { keyword }
   });
+};
+
+interface Chapter {
+  name: string;
+  url: string;
+}
+
+interface NovelDetail {
+  name: string;
+  url: string;
+  source_id: string;
+  size: string;
+  author: string;
+  status: string;
+  cover_url: string;
+  classify: string;
+  introduce: string | null;
+  last_update_time: string;
+  last_chapter_name: string;
+}
+
+interface ChapterResponse {
+  chapter_list: Chapter[];
+  next_page: string;
+}
+
+export const getNovelChapters = (novel: NovelDetail): Promise<ChapterResponse> => {
+  return api.post('/novel/chapter', {
+    novel
+  });
 }; 

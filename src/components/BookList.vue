@@ -6,7 +6,7 @@
         :bordered="false" 
         :class="{ 'book-card-selected': showManage && selectedBooks[book.source_id] }"
         hover
-        @click="!showManage && handleBookClick(book)"
+        @click="handleCardClick(book)"
       >
         <div class="book-content">
           <div class="book-cover">
@@ -35,7 +35,7 @@
               <span class="value">{{ book.progress }}</span>
             </div>
           </div>
-          <div v-if="showManage" class="checkbox-wrapper">
+          <div v-if="showManage" class="checkbox-wrapper" @click.stop>
             <a-checkbox v-model="selectedBooks[book.source_id]" />
           </div>
         </div>
@@ -60,7 +60,7 @@ interface Book {
   cover_url: string;
   last_chapter_name: string;
   progress?: string;
-  url: string;
+  url?: string;
 }
 
 const props = defineProps<{
@@ -76,8 +76,10 @@ const emit = defineEmits<{
 
 const selectedBooks = reactive<Record<string, boolean>>({});
 
-const handleBookClick = (book: Book) => {
-  emit('book-click', book);
+const handleCardClick = (book: Book) => {
+  if (!props.showManage) {
+    emit('book-click', book);
+  }
 };
 
 // 监听选中状态变化
@@ -97,6 +99,7 @@ watch(selectedBooks, (newValue) => {
   transition: all 0.3s;
   height: 220px;
   position: relative;
+  cursor: pointer;
 }
 
 .book-card-selected {
@@ -149,6 +152,7 @@ watch(selectedBooks, (newValue) => {
   right: 0;
   top: 0;
   padding: 8px;
+  cursor: default;
 }
 
 .empty-result {

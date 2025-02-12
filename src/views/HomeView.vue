@@ -194,7 +194,7 @@ import { useRouter } from 'vue-router';
 import TheHeader from '@/components/TheHeader.vue';
 import BookList from '@/components/BookList.vue';
 import { Message } from '@arco-design/web-vue';
-import { searchNovels } from '@/api/novel';
+import { searchNovels, getNovelChapters } from '@/api/novel';
 
 const router = useRouter();
 const isManaging = ref(false);
@@ -212,6 +212,10 @@ interface Book {
   last_chapter_name: string;
   progress?: string;
   url?: string;
+  size?: string;
+  classify?: string;
+  introduce?: string | null;
+  last_update_time?: string;
 }
 
 // 修改模拟数据，添加更多书籍
@@ -277,12 +281,38 @@ const handleSelectBooks = (books: Record<string, boolean>) => {
   selectedBooks.value = books;
 };
 
-const handleBookClick = (book: Book) => {
+const handleBookClick = async (book: Book) => {
   if (isSearchMode.value) {
-    // 处理搜索结果点击
-    console.log('点击搜索结果：', book);
+    try {
+      // 获取章节列表
+      const novelDetail = {
+        name: book.name,
+        url: book.url || '',
+        source_id: book.source_id,
+        size: book.size || '',
+        author: book.author,
+        status: book.status,
+        cover_url: book.cover_url,
+        classify: book.classify || '',
+        introduce: book.introduce || null,
+        last_update_time: book.last_update_time || '',
+        last_chapter_name: book.last_chapter_name
+      };
+      
+      const { data } = await getNovelChapters(novelDetail);
+      
+      // 将章节列表和书籍信息存储到 localStorage
+      localStorage.setItem(`chapters_${book.source_id}`, JSON.stringify(data.chapter_list));
+      localStorage.setItem(`book_${book.source_id}`, JSON.stringify(novelDetail));
+      
+      // 跳转到详情页
+      router.push(`/book/${book.source_id}`);
+    } catch (error) {
+      console.error('获取章节列表失败：', error);
+      Message.error('获取章节列表失败，请稍后重试');
+    }
   } else {
-    // 处理书架书籍点击
+    // 直接跳转到书架中的书籍详情页
     router.push(`/book/${book.source_id}`);
   }
 };
